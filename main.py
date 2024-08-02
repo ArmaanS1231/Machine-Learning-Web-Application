@@ -1,34 +1,68 @@
-import pandas as pd
-import seaborn as sns
-import numpy as np
+import pandas
+import quandl
+from sklearn.linear_model import LinearRegression
+from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
-from sklearn import linear_model
+import numpy as np
+
+#getting and predicting data
+df = quandl.get("WIKI/FB")
+#just closing prices
+df = df[['Adj. Close']]
+
+
+
+# A variable for prediciting 'n' days out into future
+forecast_out = 1
+#creating another column: target/dependent variable shifted 'n' units up
+df['Prediction'] = df[['Adj. Close']].shift(-(forecast_out))
+
+
+# creating independent(x) data set
+#convert dataframe to numpy aray
+X = np.array(df.drop(['Prediction'],axis=1))
+#Remove the last 'n' rows
+X = X[:-forecast_out]
+
+1
+
+#create dependent data set (y)
+#covert data frame to numpy array
+y= np.array(df['Prediction'])
+#get all y values except the last 'n' rows
+y = y[:-forecast_out]
+
+
+
+
+# spliting data to 80 20
+x_train, x_test, y_train, y_test = train_test_split(X,y, test_size=0.2)
+
+
+
+# Creeate and Train Linear Regression Model
+lr = LinearRegression()
+# Train the model
+lr.fit(x_train, y_train)
+
+#testing model
+lr_confidence = lr.score(x_test, y_test)
+#print('lr confidence:', lr_confidence)
+
+#set x_forecast equal to last 30 rows of og data set from adj.close column
+
+x_forecast = np.array(df.drop(['Prediction'], axis = 1))[-forecast_out:]
+
+
+#print lr predictions for the next 'n' days
+lr_predicition = lr.predict(x_forecast)
+print(lr_predicition)
+
 import pickle
+pickle.dump(lr, open('model.pkl', 'wb'))
+
+lr = pickle.load(open('model.pkl','rb'))
+print(lr.predict(x_forecast))
 
 
-df = pd.read_csv('heart.data.csv')
-
-df = df.drop("Unnamed: 0", axis=1)
-
-sns.lmplot(x='biking', y='heart.disease', data=df)
-sns.lmplot(x='smoking', y='heart.disease', data=df)
-
-x_df = df.drop('heart.disease', axis=1)
-y_df= df['heart.disease']
-
-X_train, X_test, y_train, y_test = train_test_split(x_df, y_df, test_size=0.3, random_state = 42)
-
-
-model=linear_model.LinearRegression()
-model.fit(X_train, y_train)
-predicition_test = model.predict(X_test)
-
-print(model.score(X_train,y_train))
-print(np.mean(predicition_test-y_test)**2)
-
-
-pickle.dump(model, open('model.pk1','wb'))
-model = pickle.load(open('model.pkl','rb'))
-
-print(model.predict([70.1, 26.3]))
 
